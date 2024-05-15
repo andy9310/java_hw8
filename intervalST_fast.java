@@ -146,34 +146,9 @@ class IntervalST<Key extends Comparable<Key>, Value>{
         check_right_node(x.right);
     }
 
-
-
-
-
-
-
-
-
-
     public static void main(String[]args)
     {
         // Example
         IntervalST<Integer, String> IST = new IntervalST<>();
-        IST.put(2,5,"badminton");
-        IST.put(1,5,"PDSA HW7");
-        IST.put(3,5,"Lunch");
-        IST.put(3,6,"Workout");
-        IST.put(3,7,"Do nothing");
-        IST.delete(2,5); // delete "badminton"
-        System.out.println(IST.intersects(1,2));
-        
-        IST.put(8,8,"Dinner");
-        System.out.println(IST.intersects(6,10));
-        
-        IST.put(3,7,"Do something"); // If an interval is identical to an existing node, then the value of that node is updated accordingly
-        System.out.println(IST.intersects(7,7));
-        
-        IST.delete(3,7); // delete "Do something"
-        System.out.println(IST.intersects(7,7));
     }
 }

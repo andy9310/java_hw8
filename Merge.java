@@ -2,12 +2,15 @@
 import com.sun.source.tree.Tree;
 
 class ImageMerge {
-    public IntervalSearchTree IST;
+    public IntervalST<> IST;
     public double[][] BBs;
     public double threshold;
     
-    public double IOU(){
-
+    public double IOU(double[] box1 ,double[] box2){
+        // x1, y1, w, h
+        double overlap = (min(box1[0]+box1[2] , box2[0]+box2[2]) - max(box1[0], box2[0])) * (min(box1[1]+box1[3] , box2[1]+box2[3]) - max(box1[1], box2[1]))
+        double union = (box1[2]*box[3]) + (box2[2]*box2[3]) - overlap;
+        return overlap/union;
     }
     public boolean box_intersect(double y1, double y2, double y11, double y22){
         if((y1 >= y11 && y2 <= y11) || ( y11 >= y1 && y22 <= y1) ) {
@@ -28,7 +31,7 @@ class ImageMerge {
             double[][] interval_nodes = IST.intersect(start,end); // return array of interval nodes
             for( double[] interval_node : interval_nodes){
                 if(box_intersect(interval_node.val[0],interval_node.val[1],box[1],box[1]-box[3])) {
-                    if (IOU() > threshold) {
+                    if (IOU(interval_node, box) > threshold) {
                         answer[index][0] = min(start, interval_node.min);
                         answer[index][1] =  max(end,interval_node.max) - answer[index][0];
                         answer[index][2] = max(box[1],interval_node.val[0]);
@@ -45,9 +48,9 @@ class ImageMerge {
         //iou_threshold:          [0.0,1.0]
         threshold = iou_thresh;
         // new tree
-        IST = new IntervalSearchTree();
+        IntervalST<double, double[]> IST = new IntervalST<>();
         for (double[] box : bbs) {
-            IST.insert(box[0], box[3]);
+            IST.insert(box[0], box[3],box);
         }
     }
     public static void draw(double[][] bbs)
