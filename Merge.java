@@ -1,19 +1,31 @@
-
-import com.sun.source.tree.Tree;
-
+import java.util.*;
 class ImageMerge {
-    public IntervalST<> IST;
+    public IntervalST<Double, double[]> IST = new IntervalST<>();
     public double[][] BBs;
     public double threshold;
     
     public double IOU(double[] box1 ,double[] box2){
         // x1, y1, w, h
-        double overlap = (min(box1[0]+box1[2] , box2[0]+box2[2]) - max(box1[0], box2[0])) * (min(box1[1]+box1[3] , box2[1]+box2[3]) - max(box1[1], box2[1]))
-        double union = (box1[2]*box[3]) + (box2[2]*box2[3]) - overlap;
+        double overlap = (Math.min(box1[0]+box1[2] , box2[0]+box2[2]) - Math.max(box1[0], box2[0])) * (Math.min(box1[1]+box1[3] , box2[1]+box2[3]) - Math.max(box1[1], box2[1]));
+        double union = (box1[2]*box1[3]) + (box2[2]*box2[3]) - overlap;
         return overlap/union;
     }
     public boolean box_intersect(double y1, double y2, double y11, double y22){
         if((y1 >= y11 && y2 <= y11) || ( y11 >= y1 && y22 <= y1) ) {
+            return true;
+        }
+        return false;
+    }
+    public double[] new_merge_box(double[] box1, double[] box2){
+        double x1 = Math.min(box1[0], box2[0]);
+        double w =  Math.max(box1[0]+box1[2], box2[0]+box2[2] ) - x1;
+        double y1 = Math.max(box1[1],box2[1]);
+        double h =  Math.max(box1[1]+box1[3], box2[1]+box2[3]) - y1;
+        double[] ans = {x1,y1,w,h};
+        return ans;
+    }
+    public boolean the_same_box(double[] box1, double[] box2){
+        if(box1[0]==box2[0] && box1[1]==box2[1] && box1[2]==box2[2] && box1[3]==box2[3]){
             return true;
         }
         return false;
@@ -23,51 +35,59 @@ class ImageMerge {
         //return merged bounding boxes just as input in the format of 
         //[up_left_x,up_left_y,width,height]
 
-        double[][] answer = new double[BBs.length][BBs[0].length];
-        int index = 0;
+        List<double[]> answer = new ArrayList<>();
         for(double[] box : BBs){
             double start = box[0];
             double end = box[0] + box[2];
-            double[][] interval_nodes = IST.intersect(start,end); // return array of interval nodes
+            List<double[]> interval_nodes = IST.intersects(start,end); // return array of interval nodes
             for( double[] interval_node : interval_nodes){
-                if(box_intersect(interval_node.val[0],interval_node.val[1],box[1],box[1]-box[3])) {
+                if (the_same_box(interval_node, box)) {
+                    IST.delete(interval_node[0], interval_node[0]+interval_node[2]);
+                    continue;
+                }
+                if( box_intersect(interval_node[1], interval_node[1]+interval_node[3], box[1], box[1]+box[3]) ) {
                     if (IOU(interval_node, box) > threshold) {
-                        answer[index][0] = min(start, interval_node.min);
-                        answer[index][1] =  max(end,interval_node.max) - answer[index][0];
-                        answer[index][2] = max(box[1],interval_node.val[0]);
-                        answer[index][3] = answer[index][2] - min(box[1]-box[3],interval_node.val[1]);
+                        answer.add(new_merge_box(interval_node, box));
                     }
                 }
             }
 
         }
-        return answer;
+        // change List<double[]> to double[][]
+        double[][] final_answer = new double[ answer.size() ][4];
+        int index = 0;
+        for (double[] box : answer) {
+            final_answer[index][0] = box[0];
+            final_answer[index][1] = box[1];
+            final_answer[index][2] = box[2];
+            final_answer[index][3] = box[3];
+        }
+        return final_answer;
     }
     public ImageMerge(double[][] bbs, double iou_thresh){
         //bbs(bounding boxes): [up_left_x,up_left_y,width,height]
         //iou_threshold:          [0.0,1.0]
         threshold = iou_thresh;
         // new tree
-        IntervalST<double, double[]> IST = new IntervalST<>();
         for (double[] box : bbs) {
-            IST.insert(box[0], box[3],box);
+            IST.put(box[0], box[0]+box[2], box);
         }
     }
-    public static void draw(double[][] bbs)
-    {
-        // ** NO NEED TO MODIFY THIS FUNCTION, WE WON'T CALL THIS **
-        // ** DEBUG ONLY, USE THIS FUNCTION TO DRAW THE BOX OUT** 
-        StdDraw.setCanvasSize(960,540);
-        for(double[] box : bbs)
-        {
-            double half_width = (box[2]/2.0);
-            double half_height = (box[3]/2.0);
-            double center_x = box[0]+ half_width;
-            double center_y = box[1] + half_height;
-            //StdDraw use y = 0 at the bottom, 1-center_y to flip
-            StdDraw.rectangle(center_x, 1-center_y, half_width,half_height);
-        }
-    }
+    // public static void draw(double[][] bbs)
+    // {
+    //     // ** NO NEED TO MODIFY THIS FUNCTION, WE WON'T CALL THIS **
+    //     // ** DEBUG ONLY, USE THIS FUNCTION TO DRAW THE BOX OUT** 
+    //     StdDraw.setCanvasSize(960,540);
+    //     for(double[] box : bbs)
+    //     {
+    //         double half_width = (box[2]/2.0);
+    //         double half_height = (box[3]/2.0);
+    //         double center_x = box[0]+ half_width;
+    //         double center_y = box[1] + half_height;
+    //         //StdDraw use y = 0 at the bottom, 1-center_y to flip
+    //         StdDraw.rectangle(center_x, 1-center_y, half_width,half_height);
+    //     }
+    // }
     public static void main(String[] args) {
         ImageMerge sol = new ImageMerge(
                 new double[][]{
@@ -77,6 +97,6 @@ class ImageMerge {
                 0.5
         );
         double[][] temp = sol.mergeBox();
-        ImageMerge.draw(temp);
+        // ImageMerge.draw(temp);
     } 
 }
